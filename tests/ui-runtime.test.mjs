@@ -148,3 +148,41 @@ test('network loss blocks repeated mutation until recorded state is recovered',a
  assert.equal(h.context.recovering,false);assert.equal(h.context.busy,null);assert.equal(h.context.selectedVersionId,'v2');
  assert.deepEqual(requests,['/api/correct','/api/state','/api/state']);
 });
+
+test('late replay presentation respects newer modal, mode, version, and clip navigation',async()=>{
+ for(const navigate of [null,'modal','dismissed-modal','mode','version','clip']){
+  const pending=deferred(),presented=[],focused=[];let click;
+  const context=vm.createContext({document:{addEventListener:(_name,fn)=>{click=fn}},
+   state:{},mode:'demo',selectedClipId:'train-positive',selectedVersionId:'v2',modalName:null,modalRevision:0,
+   currentVersion:()=>({id:context.selectedVersionId}),action:()=>pending.promise,
+   showReplayResult:(...args)=>presented.push(args),$:selector=>({focus:()=>focused.push(selector)})});
+  vm.runInContext(clickHandler,context);
+  const work=click({target:{closest:()=>({dataset:{action:'replay'}})}});
+  if(navigate==='modal'){context.modalName='versions';context.modalRevision++;}
+  if(navigate==='dismissed-modal')context.modalRevision+=2;
+  if(navigate==='mode')context.mode='live';
+  if(navigate==='version')context.selectedVersionId='v1';
+  if(navigate==='clip')context.selectedClipId='holdout-02';
+  pending.resolve({result:{events:[{id:'saved-event'}]}});await work;
+  assert.equal(presented.length,navigate?0:1,`${navigate||'unchanged'} navigation`);
+  assert.equal(focused.length,navigate?0:1);
+  if(!navigate)assert.equal(presented[0][1],'v2');
+ }
+});
+test('automatic replay presentation restores focus to a connected new control after rendering',async()=>{
+ let click;const focused=[],root={innerHTML:''},oldButton={isConnected:false};
+ const context=vm.createContext({document:{activeElement:oldButton,addEventListener:(_name,fn)=>{click=fn}},
+  state:{},mode:'demo',selectedClipId:'clip',modalName:null,modalRevision:0,priorFocus:null,
+  currentVersion:()=>({id:'v2'}),action:async()=>({result:{events:[{id:'saved'}]}}),
+  $$:()=>[],icon:()=>'',setTimeout:()=>{},
+ });
+ const newButton={isConnected:true,focus:()=>{focused.push('new-replay-control');context.document.activeElement=newButton}};
+ context.$=selector=>selector==='#modal-root'?root:newButton;
+ const dialogs=source.slice(source.indexOf('function openModal('),source.indexOf('function connections('));
+ vm.runInContext(dialogs,context);context.showReplayResult=()=>vm.runInContext("openModal('evidence','Recorded event','','')",context);
+ vm.runInContext(clickHandler,context);
+ await click({target:{closest:()=>({dataset:{action:'replay'}})}});
+ assert.equal(context.priorFocus,newButton);assert.equal(context.modalName,'evidence');
+ vm.runInContext('closeModal()',context);assert.equal(context.document.activeElement,newButton);
+ assert.deepEqual(focused,['new-replay-control','new-replay-control']);
+});

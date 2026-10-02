@@ -59,3 +59,17 @@ test('uncertain holdout predictions stay visibly unresolved rather than being de
  const proof=view(state,{mode:'live'}).proof();
  assert.match(proof,/UNCERTAIN/);assert.match(proof,/not confirmed false alerts/);
 });
+
+test('the headline comparison is shown only for comparable saved evaluations',async()=>{
+ const request=createBrowserDemo(fixtures,{storage:null});let out=await request('/api/generate');const first=out.result.id;
+ await request('/api/evaluate',{versionId:first});out=await request('/api/correct',{versionId:first,trainingClipIds:['train-negative-01','train-negative-02']});
+ const second=out.result.id;
+ assert.doesNotMatch(view(out.state).proof(),/class="learning-outcome"/);
+ out=await request('/api/evaluate',{versionId:second});let proof=view(out.state).proof();
+ assert.match(proof,/FALSE ALERTS/);assert.match(proof,/2 <span aria-label="to">→<\/span> 0/);
+ assert.match(proof,/4\/6 <span aria-label="to">→<\/span> 6\/6/);
+ assert.match(proof,/<details class="saved-rule-details">/,'Full diff is folded behind the recorded outcome');
+ assert.ok(proof.indexOf('learning-outcome')<proof.indexOf('rule-diff'));
+ out.state.evaluations.at(-1).holdoutDigest='mismatch';proof=view(out.state).proof();
+ assert.doesNotMatch(proof,/class="learning-outcome"/);assert.match(proof,/no before\/after score is shown/);
+});

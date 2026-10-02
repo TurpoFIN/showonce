@@ -75,12 +75,15 @@ try {
   assert.equal(await page.locator('.ledger-table tbody tr').count(),1);
   state=await apiState();
   assert.equal(state.ledger.length,1);
-  await scene('Replay a separate clip and create an evidence-linked event.\nThe ledger records its source, rule version, time window, and decision.',10,'ledger');
+  await page.locator('.evidence-detail video').waitFor();
+  await page.locator('.evidence-detail video').evaluate(video=>video.play());
+  await scene('Replay opens the actual recorded event and its evidence.\nThe decision is pinned to its rule version and original footage.',10,'replay-evidence');
+  await page.getByRole('button',{name:'Back to studio',exact:true}).click();
   await click('replay');
-  await page.getByRole('status').filter({hasText:'already has an event'}).waitFor();
+  await page.getByRole('dialog').waitFor();
+  await page.getByText('Original saved decision reopened.',{exact:true}).waitFor();
   assert.equal((await apiState()).ledger.length,1);
   await scene('Replay again: still one event.\nThe deduplication key prevents duplicate operational records.',6,'deduplication');
-  await page.locator('[data-action="evidence"]').click();
   await page.getByRole('dialog').waitFor();
   await page.locator('.evidence-detail video').evaluate(video=>video.play());
   await scene('Open the receipt: original clip, evidence window, and pinned rule.\nSynthetic provenance is visible beside the decision.',10,'evidence');

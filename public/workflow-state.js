@@ -42,3 +42,17 @@ export function versionComparison(state, versionId) {
  const decisions=comparable?rows.map(row=>({clipId:row.clipId,before:previousRows.find(r=>r.clipId===row.clipId),after:row})):[];
  return {parent,version,changes,previousEvaluation,evaluation,comparable,decisions,changedDecisions:decisions.filter(d=>d.before.predicted!==d.after.predicted),addedTrainingClipIds:(version.trainingClipIds||[]).filter(id=>!parent.trainingClipIds?.includes(id))};
 }
+
+/** Select only persisted decisions for this replay's exact published version. */
+export function replayOutcome(state, result, versionId) {
+ if(!result||!versionId)return null;
+ const returnedIds=new Set((result.events||[]).map(event=>event.id));
+ const replayIds=new Set((state.clips||state.fixtures?.clips||[]).filter(clip=>clip.split==='REPLAY').map(clip=>clip.id));
+ const saved=(state.ledger||[]).filter(event=>event.versionId===versionId);
+ const events=saved.filter(event=>returnedIds.has(event.id)||(result.deduplicated>0&&replayIds.has(event.clipId)));
+ if(!events.length)return null;
+ const detected=events.filter(event=>event.decision==='detected');
+ const notDetected=events.filter(event=>event.decision==='not_detected');
+ const needsReview=events.filter(event=>!['detected','not_detected'].includes(event.decision));
+ return {events,detected,notDetected,needsReview,deduplicated:Number(result.deduplicated)||0,reused:returnedIds.size===0&&result.deduplicated>0};
+}
