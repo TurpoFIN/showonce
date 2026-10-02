@@ -1,0 +1,115 @@
+{
+  "warning": "Synthetic authored video fixtures. Labels and track overlays are authored ground truth, not provider predictions. Fixture agreement is not real-world accuracy.",
+  "clips": [
+    {
+      "id": "train-positive-01",
+      "title": "Travel lane \u00b7 stopped vehicle",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "stop",
+      "eventPresent": true,
+      "stationaryDurationSec": 9,
+      "videoUrl": "/clips/train-positive-01.mp4",
+      "posterUrl": "/clips/train-positive-01.jpg"
+    },
+    {
+      "id": "train-negative-01",
+      "title": "Shoulder \u00b7 safely stopped",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "shoulder",
+      "eventPresent": false,
+      "stationaryDurationSec": 9,
+      "videoUrl": "/clips/train-negative-01.mp4",
+      "posterUrl": "/clips/train-negative-01.jpg"
+    },
+    {
+      "id": "train-negative-02",
+      "title": "Travel lane \u00b7 slow traffic",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "crawl",
+      "eventPresent": false,
+      "stationaryDurationSec": 0,
+      "videoUrl": "/clips/train-negative-02.mp4",
+      "posterUrl": "/clips/train-negative-02.jpg"
+    },
+    {
+      "id": "holdout-01",
+      "title": "Stopped in center lane",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "stop",
+      "eventPresent": true,
+      "stationaryDurationSec": 9,
+      "videoUrl": "/clips/holdout-01.mp4",
+      "posterUrl": "/clips/holdout-01.jpg"
+    },
+    {
+      "id": "holdout-02",
+      "title": "Stopped on shoulder",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "shoulder",
+      "eventPresent": false,
+      "stationaryDurationSec": 9,
+      "videoUrl": "/clips/holdout-02.mp4",
+      "posterUrl": "/clips/holdout-02.jpg"
+    },
+    {
+      "id": "holdout-03",
+      "title": "Crawling with traffic",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "crawl",
+      "eventPresent": false,
+      "stationaryDurationSec": 0,
+      "videoUrl": "/clips/holdout-03.mp4",
+      "posterUrl": "/clips/holdout-03.jpg"
+    },
+    {
+      "id": "holdout-04",
+      "title": "Stopped in right lane",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "stop_right",
+      "eventPresent": true,
+      "stationaryDurationSec": 8.5,
+      "videoUrl": "/clips/holdout-04.mp4",
+      "posterUrl": "/clips/holdout-04.jpg"
+    },
+    {
+      "id": "holdout-05",
+      "title": "Brief pause, then moving",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "brief",
+      "eventPresent": false,
+      "stationaryDurationSec": 3,
+      "videoUrl": "/clips/holdout-05.mp4",
+      "posterUrl": "/clips/holdout-05.jpg"
+    },
+    {
+      "id": "holdout-06",
+      "title": "Moving through the lane",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "moving",
+      "eventPresent": false,
+      "stationaryDurationSec": 0,
+      "videoUrl": "/clips/holdout-06.mp4",
+      "posterUrl": "/clips/holdout-06.jpg"
+    },
+    {
+      "id": "replay-01",
+      "title": "Replay \u00b7 stopped vehicle",
+      "durationSec": 12,
+      "source": "authored_synthetic_fixture",
+      "scenario": "stop",
+      "eventPresent": true,
+      "stationaryDurationSec": 9,
+      "videoUrl": "/clips/replay-01.mp4",
+      "posterUrl": "/clips/replay-01.jpg"
+    }
+  ]
+}
