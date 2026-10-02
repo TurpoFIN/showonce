@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "clips": [
+    {
+      "id": "train-positive-01",
+      "split": "TRAIN",
+      "label": true,
+      "title": "Stopped in the travel lane",
+      "scenario": "positive",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://train-positive-01",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/train-positive-01.mp4",
+      "posterUrl": "/clips/train-positive-01.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 0,
+        "observedDurationSec": 9,
+        "stoppedDurationSec": 9,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "train-positive-01",
+        "url": "/clips/train-positive-01.mp4#t=3,12",
+        "startSec": 3,
+        "endSec": 12,
+        "summary": "Stopped in the travel lane. Authored fixture: travel lane, 0 m/s, 9s observation."
+      },
+      "timestamp": "2026-10-02T14:00:00.000Z"
+    },
+    {
+      "id": "train-negative-01",
+      "split": "TRAIN",
+      "label": false,
+      "title": "Stopped on the shoulder",
+      "scenario": "shoulder",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://train-negative-01",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/train-negative-01.mp4",
+      "posterUrl": "/clips/train-negative-01.jpg",
+      "features": {
+        "lane": "shoulder",
+        "speedMps": 0,
+        "observedDurationSec": 9,
+        "stoppedDurationSec": 9,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "train-negative-01",
+        "url": "/clips/train-negative-01.mp4#t=3,12",
+        "startSec": 3,
+        "endSec": 12,
+        "summary": "Stopped on the shoulder. Authored fixture: shoulder, 0 m/s, 9s observation."
+      },
+      "timestamp": "2026-10-02T14:02:00.000Z"
+    },
+    {
+      "id": "train-negative-02",
+      "split": "TRAIN",
+      "label": false,
+      "title": "Slow traffic is still moving",
+      "scenario": "slow_traffic",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://train-negative-02",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/train-negative-02.mp4",
+      "posterUrl": "/clips/train-negative-02.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 1.3,
+        "observedDurationSec": 12,
+        "stoppedDurationSec": 0,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "train-negative-02",
+        "url": "/clips/train-negative-02.mp4#t=0,12",
+        "startSec": 0,
+        "endSec": 12,
+        "summary": "Slow traffic is still moving. Authored fixture: travel lane, 1.3 m/s, 12s observation."
+      },
+      "timestamp": "2026-10-02T14:04:00.000Z"
+    },
+    {
+      "id": "holdout-01",
+      "split": "HOLDOUT",
+      "label": true,
+      "title": "Travel-lane stop",
+      "scenario": "positive",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://holdout-01",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/holdout-01.mp4",
+      "posterUrl": "/clips/holdout-01.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 0,
+        "observedDurationSec": 9,
+        "stoppedDurationSec": 9,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "holdout-01",
+        "url": "/clips/holdout-01.mp4#t=3,12",
+        "startSec": 3,
+        "endSec": 12,
+        "summary": "Travel-lane stop. Authored fixture: travel lane, 0 m/s, 9s observation."
+      },
+      "timestamp": "2026-10-02T14:06:00.000Z"
+    },
+    {
+      "id": "holdout-02",
+      "split": "HOLDOUT",
+      "label": false,
+      "title": "Shoulder stop",
+      "scenario": "shoulder",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://holdout-02",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/holdout-02.mp4",
+      "posterUrl": "/clips/holdout-02.jpg",
+      "features": {
+        "lane": "shoulder",
+        "speedMps": 0,
+        "observedDurationSec": 9,
+        "stoppedDurationSec": 9,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "holdout-02",
+        "url": "/clips/holdout-02.mp4#t=3,12",
+        "startSec": 3,
+        "endSec": 12,
+        "summary": "Shoulder stop. Authored fixture: shoulder, 0 m/s, 9s observation."
+      },
+      "timestamp": "2026-10-02T14:08:00.000Z"
+    },
+    {
+      "id": "holdout-03",
+      "split": "HOLDOUT",
+      "label": false,
+      "title": "Crawling queue",
+      "scenario": "slow_traffic",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://holdout-03",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/holdout-03.mp4",
+      "posterUrl": "/clips/holdout-03.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 1.3,
+        "observedDurationSec": 12,
+        "stoppedDurationSec": 0,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "holdout-03",
+        "url": "/clips/holdout-03.mp4#t=0,12",
+        "startSec": 0,
+        "endSec": 12,
+        "summary": "Crawling queue. Authored fixture: travel lane, 1.3 m/s, 12s observation."
+      },
+      "timestamp": "2026-10-02T14:10:00.000Z"
+    },
+    {
+      "id": "holdout-04",
+      "split": "HOLDOUT",
+      "label": true,
+      "title": "Second travel-lane stop",
+      "scenario": "positive",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://holdout-04",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/holdout-04.mp4",
+      "posterUrl": "/clips/holdout-04.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 0,
+        "observedDurationSec": 8.5,
+        "stoppedDurationSec": 8.5,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "holdout-04",
+        "url": "/clips/holdout-04.mp4#t=3.5,12",
+        "startSec": 3.5,
+        "endSec": 12,
+        "summary": "Second travel-lane stop. Authored fixture: travel lane, 0 m/s, 8.5s observation."
+      },
+      "timestamp": "2026-10-02T14:12:00.000Z"
+    },
+    {
+      "id": "holdout-05",
+      "split": "HOLDOUT",
+      "label": false,
+      "title": "Brief pause",
+      "scenario": "brief_pause",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://holdout-05",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/holdout-05.mp4",
+      "posterUrl": "/clips/holdout-05.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 0,
+        "observedDurationSec": 3,
+        "stoppedDurationSec": 3,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "holdout-05",
+        "url": "/clips/holdout-05.mp4#t=4,7",
+        "startSec": 4,
+        "endSec": 7,
+        "summary": "Brief pause. Authored fixture: travel lane, 0 m/s, 3s observation."
+      },
+      "timestamp": "2026-10-02T14:14:00.000Z"
+    },
+    {
+      "id": "holdout-06",
+      "split": "HOLDOUT",
+      "label": false,
+      "title": "Vehicle passes through",
+      "scenario": "moving",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://holdout-06",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/holdout-06.mp4",
+      "posterUrl": "/clips/holdout-06.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 4,
+        "observedDurationSec": 12,
+        "stoppedDurationSec": 0,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "holdout-06",
+        "url": "/clips/holdout-06.mp4#t=0,12",
+        "startSec": 0,
+        "endSec": 12,
+        "summary": "Vehicle passes through. Authored fixture: travel lane, 4 m/s, 12s observation."
+      },
+      "timestamp": "2026-10-02T14:16:00.000Z"
+    },
+    {
+      "id": "replay-01",
+      "split": "REPLAY",
+      "label": true,
+      "title": "New roadway stop",
+      "scenario": "positive",
+      "mode": "demo",
+      "source": "synthetic-fixture",
+      "originalVideo": "synthetic://replay-01",
+      "duration": 12,
+      "camera": "SYNTHETIC CAM 04",
+      "videoUrl": "/clips/replay-01.mp4",
+      "posterUrl": "/clips/replay-01.jpg",
+      "features": {
+        "lane": "travel_lane",
+        "speedMps": 0,
+        "observedDurationSec": 9,
+        "stoppedDurationSec": 9,
+        "visible": true
+      },
+      "evidence": {
+        "clipId": "replay-01",
+        "url": "/clips/replay-01.mp4#t=3,12",
+        "startSec": 3,
+        "endSec": 12,
+        "summary": "New roadway stop. Authored fixture: travel lane, 0 m/s, 9s observation."
+      },
+      "timestamp": "2026-10-02T14:18:00.000Z"
+    }
+  ],
+  "baselineRule": {
+    "definition": "A visible vehicle remains stopped or nearly stopped for at least 8 seconds.",
+    "include": [
+      "Vehicle visible throughout the observation",
+      "At least 8 seconds at or below 1.5 m/s"
+    ],
+    "exclude": [
+      "Brief pauses under 8 seconds",
+      "Fast-moving vehicles"
+    ],
+    "thresholds": {
+      "minDurationSec": 8,
+      "maxSpeedMps": 1.5,
+      "travelLaneOnly": false
+    },
+    "limitation": "Positive-only baseline does not yet distinguish a shoulder stop or slow-moving queue."
+  },
+  "holdoutDigest": "8031782e32e90697e52f30fa4715abb1b063588b768eb6b929b19a338dff7356",
+  "warning": "Deterministic synthetic fixtures. No live video model was run. Scores are fixture agreement, not measured model accuracy."
+}
