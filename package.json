@@ -1,0 +1,17 @@
+{
+  "name": "showonce",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Teach cameras an event. Test the boundary. Ship an auditable rule.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "dev": "node --watch --env-file-if-exists=.env server/index.mjs",
+    "test": "node --test server/tests/*.test.mjs tests/*.test.mjs",
+    "check": "node --check public/app.js && node --check server/index.mjs && npm test",
+    "live:check": "node --env-file-if-exists=.env scripts/check-live.mjs"
+  }
+}
