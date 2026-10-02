@@ -7,13 +7,13 @@
 
 A video-first event studio for turning a few examples into an explicit, evaluated, versioned visual rule.
 
-[Try the browser demo](https://turpofin.github.io/showonce/) · [Demo walkthrough](docs/DEMO.md) · [Architecture](docs/ARCHITECTURE.md) · [Server setup](server/README.md) · [Live release gate](docs/LIVE_RUN.md)
+[Run locally](#run-locally) · [Demo walkthrough](docs/DEMO.md) · [Architecture](docs/ARCHITECTURE.md) · [Server setup](server/README.md) · [Live release gate](docs/LIVE_RUN.md)
 
 </div>
 
 ---
 
-> **LIVE INTEGRATIONS UNVERIFIED — NOT SUBMISSION-READY.** The current public build and synthetic recording are a workflow/QA milestone only. Final release requires actual VAST corpus footage, successful NVIDIA Cosmos and W&B calls, a genuine evaluated rule, and a recorded live end-to-end result. Mock tests and fixture agreement do not satisfy that release gate.
+> **LIVE INTEGRATIONS UNVERIFIED — NOT SUBMISSION-READY.** The current source and synthetic fixture mode are a workflow/QA milestone only. No hosted demo, GitHub Actions run, or completed live recording is available. Final release requires actual VAST corpus footage, successful NVIDIA Cosmos and W&B calls, a genuine evaluated rule, and a recorded live end-to-end result. Mock tests and fixture agreement do not satisfy that release gate.
 
 ## The idea
 
@@ -25,7 +25,7 @@ The example is deliberately narrow: **a vehicle stationary in an active travel l
 
 ## Try it in two minutes
 
-The [public demo](https://turpofin.github.io/showonce/) runs entirely in your browser. No account, API key, package installation, or paid provider is required. Each browser gets its own local workspace.
+Run the app locally using the instructions below. Open `http://127.0.0.1:3000/?demo=local` for the isolated browser-local fixture mode. That mode needs no account, API key, runtime package installation, or paid provider. Each browser gets its own local workspace. Public hosting is not deployed and GitHub Actions is disabled.
 
 1. Play the positive teaching clip, then choose **Generate rule**
 2. **Test on holdout**: the deliberately permissive baseline agrees with 4 of 6 authored fixtures; two false alerts block publication
@@ -47,8 +47,8 @@ The [public demo](https://turpofin.github.io/showonce/) runs entirely in your br
 - Publication blocked until every labeled holdout case agrees and none are uncertain
 - Immutable published versions, rule snapshots, evidence windows, event deduplication, and a downloadable JSON audit bundle
 - A durable, zero-runtime-dependency Node server with real server-side sponsor clients
-- A portable browser-local fixture adapter for the public demonstration
-- Automated backend, adapter-contract, static-demo, security, persistence, and browser workflow checks
+- A portable browser-local fixture adapter for local workflow QA
+- Automated backend, adapter-contract, static-demo, security, persistence, and release-gate checks, plus prepared browser-recording scripts
 
 ## Three sponsor integration paths
 
@@ -78,11 +78,13 @@ npm run check
 
 For real providers, copy `.env.example` to `.env` and configure the authorized workshop environment on your own machine. Never commit credentials. See [server/README.md](server/README.md) for the exact setup, API, and trust boundaries.
 
-**Do not expose a credentialed Node server directly to the public internet.** It is a single-workspace prototype without an account/authentication layer. Keep it on loopback or use an authenticated reverse proxy. The public Pages demo is safe to share because it has no provider credentials, remote calls, or shared mutable server state.
+**Do not expose a credentialed Node server directly to the public internet.** It is a single-workspace prototype without an account/authentication layer. Keep it on loopback or use an authenticated reverse proxy. The browser-local fixture adapter has no provider credentials, remote calls, or shared mutable server state. It is not currently deployed to a public host.
 
 ## Fixture QA recording and required live video
 
-The **Browser demo and recording** GitHub Actions workflow records the real application in Chromium, exercises the complete workflow, and uploads a captioned MP4 plus screenshots and an exported evidence JSON bundle. See the repository's **Actions** tab for the latest successful recording artifact. This synthetic recording is QA evidence, not the final contest demo. The final video must record verified live provider execution and real corpus evidence, and stay under three minutes.
+`scripts/record-demo.mjs` prepares local Chromium workflow QA using synthetic fixtures. `scripts/record-live.mjs` separately records inspection of an already completed, verified live run and refuses fixture-only evidence. Neither script has produced a completed recording in the current verification state.
+
+Run recording only in the authorized workshop/local environment. No GitHub Actions workflows are included or enabled, and no paid CI or new hosting service is required. A synthetic recording is QA evidence, not the final contest demo. The final video must show genuine provider execution and real corpus evidence, and stay under three minutes.
 
 - [Three-minute storyboard](docs/DEMO.md)
 - [Submission draft and readiness checklist](docs/SUBMISSION.md)
