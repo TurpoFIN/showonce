@@ -78,3 +78,21 @@ The synthetic GitHub Actions recording is a separate QA artifact. It must not re
 - [ ] Repository includes final verified source; final video exists and plays
 
 Until these are established, the correct status is **live unverified, not submission-ready**.
+
+## Read-only capture of a completed genuine run
+
+After all release gates pass, `scripts/record-live.mjs` inspects the stored genuine run. It refuses browser fixtures, missing provider receipts, unreviewed labels, parent leakage, failed evaluation, or a missing detected replay. It makes no mutation requests and never resets the workspace. It explicitly captions results as completed provider calls rather than new inference.
+
+```sh
+# In an environment where browser recording is permitted:
+npm install --no-save --package-lock=false playwright
+npx playwright install chromium
+LIVE_BASE_URL=http://127.0.0.1:3000 node scripts/record-live.mjs
+ffmpeg -i artifacts/live/showonce-live.webm \
+  -vf "pad=1440:1200:0:0:black,subtitles=artifacts/live/live-captions.srt:force_style='FontSize=19,MarginV=20'" \
+  -c:v libx264 -crf 22 -pix_fmt yuv420p -movflags +faststart \
+  artifacts/live/showonce-live.mp4
+ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 artifacts/live/showonce-live.mp4
+```
+
+Inspect the completed MP4, ensure it stays under 180 seconds, and review the evidence JSON for private corpus context before sharing. The consistency gate does not cryptographically attest that an external provider ran; the operator must also verify the actual authorized environment and provider execution.
