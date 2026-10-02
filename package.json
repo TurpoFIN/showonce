@@ -12,6 +12,7 @@
     "dev": "node --watch --env-file-if-exists=.env server/index.mjs",
     "test": "node --test server/tests/*.test.mjs tests/*.test.mjs",
     "check": "node --check public/app.js && node --check server/index.mjs && npm test",
-    "live:check": "node --env-file-if-exists=.env scripts/check-live.mjs"
+    "live:check": "node --env-file-if-exists=.env scripts/check-live.mjs",
+    "workshop": "node scripts/workshop.mjs"
   }
 }

@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
+import { AppError } from '../lib/errors.mjs';
 import assert from 'node:assert/strict';
 import { Application } from '../lib/application.mjs';
 import { Store } from '../lib/store.mjs';
@@ -75,7 +77,7 @@ function live() {
   const integrations = {
     readiness: () => [],
     media: async () => Buffer.from('test-video-bytes'),
-    observe: async (clip, rule) => { calls.push({ operation:'observe', clipId:clip.id, rule }); return { predicted: clip.id.includes('positive'), summary:`Observed ${clip.id}`, evidence:clip.evidence }; },
+    observe: async (clip, rule) => { calls.push({ operation:'observe', clipId:clip.id, rule }); return { predicted: clip.id.includes('positive'), summary:`Observed ${clip.id}`, contentDigest:createHash('sha256').update('test-video-bytes').digest('hex'), evidence:clip.evidence }; },
     generateRule: async payload => { calls.push({ operation:'generateRule', payload }); return { rule:correctedRule(baselineRule(), fixtures), model:'mock-contract-test', usage:{} }; },
     reingest: async () => ({ jobId:'job-1' }),
   };
@@ -87,16 +89,19 @@ function live() {
   ];
   return {app,calls,integrations};
 }
-async function prepareLive(app) {
-  for (const [clipId,split,label] of [['train-positive','TRAIN',true],['train-negative','TRAIN',false],['holdout-positive','HOLDOUT',true],['holdout-negative','HOLDOUT',false],['replay-positive','REPLAY',null]]) await app.label({clipId,split,label,labelSource:'human-reviewed',reviewed:true});
+async function prepareLive(app,eventName='Roadway stop') {
+  for (const [clipId,split,label] of [['train-positive','TRAIN',true],['train-negative','TRAIN',false],['holdout-positive','HOLDOUT',true],['holdout-negative','HOLDOUT',false],['replay-positive','REPLAY',null]]) await app.label({clipId,split,label,labelSource:'human-reviewed',reviewed:true,eventName});
 }
 test('human labels are frozen by parent video and excluded from inference prompts', async () => {
   const {app,calls} = live(); await prepareLive(app);
-  await assert.rejects(app.label({clipId:'holdout-sibling',split:'TRAIN',label:false,labelSource:'human-reviewed',reviewed:true}), errorCode('PARENT_VIDEO_LEAKAGE'));
+  await assert.rejects(app.label({clipId:'holdout-sibling',split:'TRAIN',label:false,labelSource:'human-reviewed',reviewed:true,eventName:'Roadway stop'}), errorCode('PARENT_VIDEO_LEAKAGE'));
   await app.generate({mode:'live',eventName:'Roadway stop'});
   assert.ok(app.state().liveHoldout.digest);
-  await assert.rejects(app.label({clipId:'holdout-sibling',split:'TRAIN',label:false,labelSource:'human-reviewed',reviewed:true}), errorCode('HOLDOUT_FROZEN'));
-  await assert.rejects(app.label({clipId:'holdout-negative',split:'HOLDOUT',label:true,labelSource:'human-reviewed',reviewed:true}), errorCode('HOLDOUT_FROZEN'));
+  const held = app.state().clips.filter(c => c.mode === 'live' && c.split === 'HOLDOUT');
+  assert.ok(held.every(c => /^[a-f0-9]{64}$/.test(c.contentDigest)), 'Public evidence must retain frozen HOLDOUT video hashes');
+  assert.ok(held.every(c => !('segmentSource' in c)), 'Public evidence must not disclose upstream media source fields');
+  await assert.rejects(app.label({clipId:'holdout-sibling',split:'TRAIN',label:false,labelSource:'human-reviewed',reviewed:true,eventName:'Roadway stop'}), errorCode('HOLDOUT_FROZEN'));
+  await assert.rejects(app.label({clipId:'holdout-negative',split:'HOLDOUT',label:true,labelSource:'human-reviewed',reviewed:true,eventName:'Roadway stop'}), errorCode('HOLDOUT_FROZEN'));
   await assert.rejects(app.reingest({clipId:'holdout-positive',customPrompt:'Describe stops',confirm:true}), errorCode('TRAIN_ONLY_REINGEST'));
   await app.evaluate({mode:'live',versionId:'v1'});
   await app.correct({mode:'live',versionId:'v1',trainingClipIds:['train-negative'],feedback:'Ignore vehicles on the shoulder; require visual stationarity.'});
@@ -166,14 +171,97 @@ test('AI-proposed labels are stored distinctly and blocked until explicit human 
   const {app}=live();
   await assert.rejects(app.label({clipId:'train-positive',split:'TRAIN',label:true}),errorCode('LABEL_PROVENANCE_REQUIRED'));
   await assert.rejects(app.label({clipId:'train-positive',split:'TRAIN',label:true,labelSource:'human-reviewed'}),errorCode('HUMAN_REVIEW_REQUIRED'));
-  await prepareLive(app);
+  await prepareLive(app,'Package pickup');
   await app.label({clipId:'train-negative',split:'TRAIN',label:false,labelSource:'ai-proposed'});
   assert.equal(app.state().clips.find(c=>c.id==='train-negative').reviewed,false);
   await assert.rejects(app.generate({mode:'live',eventName:'Package pickup'}),errorCode('HUMAN_REVIEW_REQUIRED'));
-  await app.label({clipId:'train-negative',split:'TRAIN',label:false,labelSource:'human-reviewed',reviewed:true});
+  await app.label({clipId:'train-negative',split:'TRAIN',label:false,labelSource:'human-reviewed',reviewed:true,eventName:'Package pickup'});
   await app.label({clipId:'holdout-negative',split:'HOLDOUT',label:false,labelSource:'ai-proposed'});
   await assert.rejects(app.generate({mode:'live',eventName:'Package pickup'}),errorCode('HUMAN_REVIEW_REQUIRED'));
-  await app.label({clipId:'holdout-negative',split:'HOLDOUT',label:false,labelSource:'human-reviewed',reviewed:true});
+  await app.label({clipId:'holdout-negative',split:'HOLDOUT',label:false,labelSource:'human-reviewed',reviewed:true,eventName:'Package pickup'});
   const result=await app.generate({mode:'live',eventName:'Package pickup'});
   assert.equal(result.result.status,'draft');
+});
+
+test('human labels require and retain the exact event criterion; changed intent is rejected before inference',async()=>{
+  const {app,calls}=live();
+  await assert.rejects(app.label({clipId:'train-positive',split:'TRAIN',label:true,labelSource:'human-reviewed',reviewed:true}),errorCode('LABEL_EVENT_REQUIRED'));
+  await prepareLive(app,'Package pickup');
+  assert.equal(app.state().clips.find(c=>c.id==='train-positive').labelEventName,'Package pickup');
+  await assert.rejects(app.generate({mode:'live',eventName:'Package repositioning'}),errorCode('LABEL_INTENT_MISMATCH'));assert.equal(calls.length,0);
+  await app.label({clipId:'holdout-negative',split:'HOLDOUT',label:false,labelSource:'human-reviewed',reviewed:true,eventName:'Package repositioning'});
+  await assert.rejects(app.generate({mode:'live',eventName:'Package pickup'}),errorCode('LABEL_INTENT_MISMATCH'));assert.equal(calls.length,0);
+});
+test('TRAIN and REPLAY clips are pinned on first consumption; later correction and cross-version replay reject changed bytes',async()=>{
+  const {app,integrations,calls}=live();await prepareLive(app);
+  let bytes='test-video-bytes';
+  integrations.observe=async(clip,rule)=>{
+    const hash=createHash('sha256').update(bytes).digest('hex');
+    if(clip.contentDigest && clip.contentDigest!==hash)throw new AppError(409,'EVIDENCE_CHANGED','Pinned bytes changed');
+    calls.push({operation:'observe',clipId:clip.id});
+    return {predicted:clip.id.includes('positive'),summary:'Observed clip',contentDigest:hash,evidence:clip.evidence};
+  };
+  await app.generate({mode:'live',eventName:'Roadway stop'});await app.evaluate({mode:'live',versionId:'v1'});await app.publish({versionId:'v1'});await app.replay({versionId:'v1'});
+  assert.match(app.state().clips.find(c=>c.id==='train-positive').contentDigest,/^[a-f0-9]{64}$/);
+  assert.match(app.state().clips.find(c=>c.id==='replay-positive').contentDigest,/^[a-f0-9]{64}$/);
+  const before=calls.filter(c=>c.operation==='generateRule').length;bytes='changed-video';
+  await assert.rejects(app.correct({mode:'live',versionId:'v1',trainingClipIds:['train-negative']}),errorCode('EVIDENCE_CHANGED'));
+  assert.equal(calls.filter(c=>c.operation==='generateRule').length,before);
+  bytes='test-video-bytes';
+  await app.correct({mode:'live',versionId:'v1',trainingClipIds:['train-negative']});
+  await app.evaluate({mode:'live',versionId:'v2'});await app.publish({versionId:'v2'});
+  bytes='changed-video';
+  await assert.rejects(app.replay({versionId:'v2'}),errorCode('EVIDENCE_CHANGED'));
+  assert.equal(app.state().ledger.length,1);
+});
+
+async function passingDemo() {
+  const app = demo();
+  await app.generate({mode:'demo', trainingClipIds:['train-positive-01','train-negative-01','train-negative-02']});
+  await app.evaluate({mode:'demo', versionId:'v1'});
+  return app;
+}
+test('actual rule bytes are checked before evaluation, correction, publication and replay', async () => {
+  for (const action of ['evaluate','correct','publish','replay']) {
+    const app = await passingDemo();
+    if (action === 'replay') await app.publish({versionId:'v1'});
+    app.store.data.versions[0].rule.thresholds.minDurationSec = 1;
+    await assert.rejects(app[action]({mode:'demo',versionId:'v1',trainingClipIds:['train-negative-01']}), errorCode('RULE_CHANGED'));
+    assert.equal(app.state().ledger.length, 0);
+  }
+});
+test('publication recomputes scores and rejects altered, missing, duplicate or relabeled evaluation rows', async () => {
+  const mutations = [
+    e => { e.metrics.correct = 999; },
+    e => { e.results.pop(); },
+    e => { e.results[0] = null; },
+    e => { e.results[1] = structuredClone(e.results[0]); },
+    e => { e.results[0].expected = !e.results[0].expected; },
+    e => { e.results[0].predicted = !e.results[0].predicted; },
+    e => { e.results[0].predicted = 'true'; },
+    e => { e.mode = 'live'; },
+  ];
+  for (const mutate of mutations) {
+    const app = await passingDemo(); mutate(app.store.data.evaluations[0]);
+    await assert.rejects(app.publish({versionId:'v1'}), e => ['EVALUATION_MISMATCH','EVALUATION_REQUIRED'].includes(e.code));
+    assert.equal(app.state().versions[0].status, 'evaluated');
+  }
+});
+test('idempotent evaluation, publication and replay still validate their saved evidence', async () => {
+  for (const action of ['evaluate','publish','replay']) {
+    const app = await passingDemo();
+    if (action !== 'evaluate') await app.publish({versionId:'v1'});
+    app.store.data.evaluations[0].results[0].correct = false;
+    await assert.rejects(app[action]({mode:'demo',versionId:'v1'}), errorCode('EVALUATION_MISMATCH'));
+    assert.equal(app.state().ledger.length, 0);
+  }
+});
+test('live publication rechecks frozen membership and event review intent', async () => {
+  for (const mutation of ['membership','intent']) {
+    const {app}=live(); await prepareLive(app);
+    await app.generate({mode:'live',eventName:'Roadway stop'}); await app.evaluate({mode:'live',versionId:'v1'});
+    if (mutation === 'membership') app.store.data.liveHoldout.clips.pop();
+    else app.store.data.liveHoldout.clips[0].labelEventName='Different event';
+    await assert.rejects(app.publish({versionId:'v1'}), errorCode(mutation === 'membership' ? 'HOLDOUT_CHANGED' : 'LABEL_INTENT_MISMATCH'));
+  }
 });

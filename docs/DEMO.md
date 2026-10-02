@@ -2,6 +2,21 @@
 
 **NOT A FINAL CONTEST DEMO:** the prepared synthetic fixture recorder is for workflow QA only. The final submission video must use real VAST footage and verified successful Cosmos and W&B execution. Do not submit the fixture recording as proof of sponsor usage.
 
+## Required genuine-live film
+
+Use the actual event supported by the team's corpus, not the synthetic traffic example below. After an honestly completed experiment, `record-live.mjs` inspects it in approximately 2:10–2:40:
+
+- 0:00–0:10: identify the real experiment and explain these are recorded results
+- 0:10–0:30: play the human-reviewed positive and negative TRAIN clips
+- 0:30–0:54: inspect the W&B-generated rule and small isolated HOLDOUT result
+- 0:54–1:14: play HOLDOUT evidence and inspect the published-version ledger
+- 1:14–1:38: play the replay evidence and show its actual Cosmos receipt
+- 1:38–2:05: audit trail, provider roles, limitations, close
+
+Transitions add a few seconds. The recorder fails captures that exceed its budget, and checks the actual file duration. It does not issue new inference calls. For a manual film of fresh calls, complete the genuine workflow, retain the unedited source, and disclose any skipped waiting time. Never replace an error, missing provider response, or unfinished run with fixture footage. See [live recording setup](LIVE_RUN.md#read-only-capture-of-a-completed-genuine-run).
+
+## Synthetic fixture rehearsal only
+
 Target: 2:15–2:45. The recorded footage should show the real UI, not a pre-rendered product mockup. Keep the synthetic-fixture badge visible throughout.
 
 ## 0:00–0:20 · The problem

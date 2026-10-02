@@ -25,6 +25,42 @@ function originAllowed(req, origins) {
   const same = origin === `${req.socket.encrypted ? 'https' : 'http'}://${req.headers.host}`;
   return same || origins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 }
+function hostAllowed(req, origins) {
+  // Origin alone is insufficient: a rebinding website can make its own hostname
+  // resolve to loopback and send matching Host/Origin headers to this server.
+  let requested;
+  try {
+    requested = new URL(`http://${req.headers.host}`);
+    if (requested.username || requested.password || requested.pathname !== '/' || requested.search || requested.hash) return false;
+  } catch { return false; }
+  const trusted = new Set(['localhost', '127.0.0.1', '[::1]']);
+  const listenerAddress = req.socket.localAddress?.replace(/^::ffff:/, '');
+  if (listenerAddress) trusted.add(listenerAddress.includes(':') ? `[${listenerAddress}]` : listenerAddress);
+  for (const origin of origins) {
+    try { trusted.add(new URL(origin).hostname); } catch { /* Invalid entries grant no host access. */ }
+  }
+  return trusted.has(requested.hostname);
+}
+function responseRange(req, res, size) {
+  let start = 0, end = size - 1;
+  if (!req.headers.range) return { start, end, status: 200 };
+  const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
+  const invalid = () => {
+    res.setHeader('Content-Range', `bytes */${size}`);
+    throw new AppError(416, 'INVALID_RANGE', 'Byte range is invalid or outside the media.');
+  };
+  if (!match || !(match[1] || match[2])) return invalid();
+  if (!match[1]) {
+    const count = Number(match[2]);
+    if (!(count > 0)) return invalid();
+    start = Math.max(0, size - count);
+  } else {
+    start = Number(match[1]);
+    end = match[2] ? Math.min(Number(match[2]), end) : end;
+  }
+  if (!(start <= end && start < size)) return invalid();
+  return { start, end, status: 206 };
+}
 async function serveFile(req, res, root, pathname) {
   assert(!pathname.split('/').some(p => p.startsWith('.')), 404, 'NOT_FOUND', 'Resource not found.');
   let file = path.resolve(root, `.${pathname}`);
@@ -39,15 +75,8 @@ async function serveFile(req, res, root, pathname) {
   }
   assert(info.isFile(), 404, 'NOT_FOUND', 'Resource not found.');
   const headers = { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Accept-Ranges':'bytes', 'Cache-Control': path.extname(file) === '.html' ? 'no-cache' : 'public, max-age=3600' };
-  let start = 0, end = info.size - 1, status = 200;
-  if (req.headers.range) {
-    const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
-    assert(match && (match[1] || match[2]), 416, 'INVALID_RANGE', 'Invalid byte range.');
-    if (!match[1]) { const n = Number(match[2]); assert(n > 0, 416, 'INVALID_RANGE', 'Invalid byte range.'); start = Math.max(0, info.size - n); }
-    else { start = Number(match[1]); end = match[2] ? Math.min(Number(match[2]), end) : end; }
-    assert(start <= end && start < info.size, 416, 'INVALID_RANGE', 'Byte range is outside the file.');
-    status = 206; headers['Content-Range'] = `bytes ${start}-${end}/${info.size}`;
-  }
+  const { start, end, status } = responseRange(req, res, info.size);
+  if (status === 206) headers['Content-Range'] = `bytes ${start}-${end}/${info.size}`;
   headers['Content-Length'] = Math.max(0, end - start + 1);
   res.writeHead(status, headers);
   if (req.method === 'HEAD' || info.size === 0) { res.end(); return; }
@@ -66,13 +95,14 @@ export async function createServer({ dataFile = process.env.SHOWONCE_DATA_FILE |
   staticRoot = path.resolve(staticRoot);
   const origins = (env.SHOWONCE_ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
   const methods = { '/api/generate':'generate', '/api/evaluate':'evaluate', '/api/correct':'correct', '/api/publish':'publish', '/api/replay':'replay', '/api/reset':'reset',
-    '/api/discover':'discover', '/api/label':'label', '/api/check':'check', '/api/reingest':'reingest' };
+    '/api/discover':'discover', '/api/label':'label', '/api/check':'check', '/api/reingest':'reingest', '/api/cancel':'cancel', '/api/reingest/reconcile':'reconcileReingest' };
   const server = http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; font-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
     try {
+      assert(hostAllowed(req, origins), 403, 'HOST_NOT_ALLOWED', 'This host is not allowed to use the local server. Configure the exact authenticated preview origin if needed.');
       assert(originAllowed(req, origins), 403, 'ORIGIN_NOT_ALLOWED', 'This origin is not allowed to use the local API.');
       if (req.headers.origin) { res.setHeader('Access-Control-Allow-Origin', req.headers.origin); res.setHeader('Vary', 'Origin'); }
       res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -83,13 +113,15 @@ export async function createServer({ dataFile = process.env.SHOWONCE_DATA_FILE |
       if (pathname === '/api/health' && req.method === 'GET') return json(res, 200, { status: 'ok', service: 'showonce', source: 'local-server' });
       if (pathname.startsWith('/api/media/') && ['GET','HEAD'].includes(req.method)) {
         const bytes = await application.media(pathname.slice('/api/media/'.length));
-        res.writeHead(200, { 'Content-Type':'video/mp4', 'Content-Length':bytes.length, 'Cache-Control':'private, no-store' });
-        res.end(req.method === 'HEAD' ? undefined : bytes); return;
+        // Verify the full frozen content digest before serving any requested range.
+        const { start, end, status } = responseRange(req, res, bytes.length);
+        res.writeHead(status, { 'Content-Type':'video/mp4', 'Content-Length':Math.max(0, end - start + 1), 'Accept-Ranges':'bytes', 'Cache-Control':'private, no-store',
+          ...(status === 206 ? { 'Content-Range':`bytes ${start}-${end}/${bytes.length}` } : {}) });
+        res.end(req.method === 'HEAD' ? undefined : bytes.subarray(start, end + 1)); return;
       }
       if (pathname.startsWith('/api/reingest/') && req.method === 'GET') return json(res, 200, await application.reingestStatus(pathname.slice('/api/reingest/'.length)));
       if (methods[pathname] && req.method === 'POST') {
         const result = await application[methods[pathname]](await body(req));
-        result.state.busy = false;
         return json(res, 200, result);
       }
       if (pathname.startsWith('/api/')) throw new AppError(404, 'NOT_FOUND', 'API route was not found.');

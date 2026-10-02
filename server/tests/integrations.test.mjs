@@ -150,3 +150,25 @@ test('Cosmos abstains on positive evidence shorter than the explicit duration ru
   const instant=await client.observe(clip,{definition:'Object is lifted from the surface',include:[],exclude:[],thresholds:{minDurationSec:0}});
   assert.equal(instant.predicted,true);
 });
+test('VAST media refreshes an expired username/password token once without exposing either token', async () => {
+  let logins=0,downloads=0;const tokens=[];
+  const client=new Integrations({env:{INGRESS_URL:'https://vast.example',USERNAME:'team',PASSWORD:'private-password'},fetchImpl:async(url)=>{
+    if(url.endsWith('/auth/login'))return response({access_token:`private-token-${++logins}`});
+    downloads++;tokens.push(new URL(url).searchParams.get('token'));
+    if(downloads===1)return response({},401);
+    return new Response(Buffer.from('video'));
+  }});
+  assert.equal((await client.media(clip)).toString(),'video');assert.equal(logins,2);assert.equal(downloads,2);
+  assert.deepEqual(tokens,['private-token-1','private-token-2']);
+});
+test('VAST media never retries a static token or a second failed refresh', async () => {
+  let calls=0;
+  const staticClient=new Integrations({env,fetchImpl:async()=>{calls++;return response({},401);}});
+  await assert.rejects(staticClient.media(clip),e=>e.upstreamStatus===401);assert.equal(calls,1);
+  let logins=0,downloads=0;
+  const sessionClient=new Integrations({env:{INGRESS_URL:'https://vast.example',USERNAME:'team',PASSWORD:'private'},fetchImpl:async(url)=>{
+    if(url.endsWith('/auth/login'))return response({access_token:`private-${++logins}`});
+    downloads++;return response({},401);
+  }});
+  await assert.rejects(sessionClient.media(clip),e=>e.upstreamStatus===401);assert.equal(logins,2);assert.equal(downloads,2);
+});

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { AppError, assert } from './errors.mjs';
+import { assertNotCancelled, cancellationError, operationSignal, operationPhase } from './operation-context.mjs';
 
 export const SOURCES = {
   vast: 'https://github.com/vast-data/vast-builders-challenge/blob/main/.cursor/skills/retrieval/search/SKILL.md',
@@ -84,8 +85,10 @@ export function selectTextModel(catalog, override) {
 }
 
 export class Integrations {
-  constructor({ env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 60000 } = {}) {
-    this.env = env; this.fetch = fetchImpl; this.timeoutMs = timeoutMs; this.token = null; this.model = null; this.wandbSelection = null; this.checks = {}; this.lastSearchDiagnostics = null;
+  constructor({ env = process.env, fetchImpl = globalThis.fetch, timeoutMs } = {}) {
+    timeoutMs = Number(timeoutMs ?? env.SHOWONCE_PROVIDER_TIMEOUT_MS ?? 120000);
+    assert(Number.isInteger(timeoutMs) && timeoutMs >= 5000 && timeoutMs <= 300000, 503, 'INVALID_PROVIDER_TIMEOUT', 'SHOWONCE_PROVIDER_TIMEOUT_MS must be an integer between 5000 and 300000 milliseconds.');
+    this.env = env; this.fetch = fetchImpl; this.timeoutMs = timeoutMs; this.token = null; this.model = null; this.wandbSelection = null; this.checks = {}; this.lastSearchDiagnostics = null; this.checking = 0;
   }
   readiness() {
     const e = this.env;
@@ -104,7 +107,10 @@ export class Integrations {
     assert(item?.configured, 503, 'INTEGRATION_NOT_CONFIGURED', `${item?.name ?? id} is not configured on the server. ${item?.detail ?? ''}`);
   }
   async request(provider, url, { method = 'GET', body, headers = {}, binary = false } = {}) {
-    const signal = AbortSignal.timeout(this.timeoutMs);
+    const currentOperationSignal = operationSignal();
+    assertNotCancelled(currentOperationSignal);
+    const timeoutSignal = AbortSignal.timeout(this.timeoutMs);
+    const signal = currentOperationSignal ? AbortSignal.any([timeoutSignal, currentOperationSignal]) : timeoutSignal;
     let response;
     try {
       response = await this.fetch(url, { method, redirect: 'error', signal,
@@ -118,14 +124,17 @@ export class Integrations {
         throw error;
       }
       const bytes = await boundedBody(response, binary ? MAX_VIDEO_BYTES : MAX_JSON_BYTES);
+      assertNotCancelled(currentOperationSignal);
+      if (timeoutSignal.aborted) throw new Error('provider-timeout');
       if (binary) return bytes;
       try { return JSON.parse(bytes.toString('utf8')); }
       catch { throw new AppError(502, 'UPSTREAM_INVALID_JSON', `${provider} returned an invalid JSON response.`); }
     } catch (error) {
+      if (currentOperationSignal?.aborted) throw cancellationError();
       if (error instanceof AppError) throw error;
       // Never return fetch messages: they may contain a URL carrying a credential.
-      throw new AppError(503, signal.aborted ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_UNAVAILABLE',
-        signal.aborted ? `${provider} timed out. No result was saved.` : `${provider} could not be reached. Check server connectivity.`);
+      throw new AppError(503, timeoutSignal.aborted ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_UNAVAILABLE',
+        timeoutSignal.aborted ? `${provider} exceeded the ${this.timeoutMs / 1000}-second provider timeout. No inference or mutation was automatically retried. The provider may still finish and incur charges. Check server connectivity or configure SHOWONCE_PROVIDER_TIMEOUT_MS within 5000–300000.` : `${provider} could not be reached. Check server connectivity.`);
     }
   }
   async vastToken() {
@@ -170,7 +179,7 @@ export class Integrations {
         diagnostics.metadataLookups++;
         try { metadata = await this.vast(`/videos/metadata?${new URLSearchParams({ source: r.source })}`); }
         catch (error) {
-          if (error.upstreamStatus === 401 || error.upstreamStatus === 403) throw error;
+          if (error.code === 'OPERATION_CANCELLED' || error.upstreamStatus === 401 || error.upstreamStatus === 403) throw error;
           diagnostics.unresolvedParents++; return null;
         }
         if (metadata.source && metadata.source !== r.source) { diagnostics.conflictingParents++; return null; }
@@ -191,7 +200,10 @@ export class Integrations {
           endSec: Number.isFinite(endSec) ? endSec : 0, summary: String(details.reasoning_content ?? 'Indexed clip; watch before labeling.').slice(0, 2000) },
         timestamp: details.timestamp ?? details.created_at ?? null };
     };
-    for (let i = 0; i < rows.length; i += 4) clips.push(...(await Promise.all(rows.slice(i, i + 4).map(normalize))).filter(Boolean));
+    for (let i = 0; i < rows.length; i += 4) {
+      operationPhase(`Resolving indexed parent videos ${Math.min(i + 4, rows.length)} of ${rows.length}`);
+      clips.push(...(await Promise.all(rows.slice(i, i + 4).map(normalize))).filter(Boolean));
+    }
     this.lastSearchDiagnostics = diagnostics;
     assert(clips.length || !(diagnostics.unresolvedParents + diagnostics.conflictingParents), 502, 'PARENT_VIDEO_UNRESOLVED',
       'VAST returned indexed segments, but their parent-video identity could not be verified from chunk_results or segment metadata. No clips were admitted, protecting TRAIN/HOLDOUT isolation.');
@@ -200,10 +212,18 @@ export class Integrations {
 
   async media(clip) {
     assert(clip?.mode === 'live' && /^s3:\/\/[^\s?#]+$/.test(clip.segmentSource), 400, 'INVALID_MEDIA_SOURCE', 'Only discovered VAST clips can be streamed.');
-    const token = await this.vastToken();
     const base = baseUrl(this.env.INGRESS_URL, 'VAST');
-    const query = new URLSearchParams({ source: clip.segmentSource, token });
-    const bytes = await this.request('VAST video', `${base}/api/v1/videos/stream?${query}`, { binary: true });
+    const download = async token => {
+      const query = new URLSearchParams({ source: clip.segmentSource, token });
+      return this.request('VAST video', `${base}/api/v1/videos/stream?${query}`, { binary: true });
+    };
+    let bytes;
+    try { bytes = await download(await this.vastToken()); }
+    catch (error) {
+      if (error.upstreamStatus !== 401 || this.env.VAST_API_TOKEN) throw error;
+      this.token = null;
+      bytes = await download(await this.vastToken());
+    }
     if (clip.contentDigest) assert(createHash('sha256').update(bytes).digest('hex') === clip.contentDigest, 409,
       'EVIDENCE_CHANGED', 'The source video bytes changed after they were frozen. Evaluation and evidence playback are blocked.');
     return bytes;
@@ -279,6 +299,8 @@ export class Integrations {
   }
 
   async check() {
+    this.checking++;
+    try {
     await Promise.all(this.readiness().filter(x => x.configured).map(async ({ id }) => {
       try {
         if (id === 'vast') await this.vast('/auth/me');
@@ -295,6 +317,7 @@ export class Integrations {
       }
     }));
     return this.readiness();
+    } finally { this.checking--; }
   }
   async reingest(clip, customPrompt) {
     assert(clip?.mode === 'live' && /^s3:\/\/[^\s?#]+$/.test(clip.originalVideo), 400, 'INVALID_REINGEST_SOURCE', 'Select an existing indexed VAST video.');
