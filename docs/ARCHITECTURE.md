@@ -1,14 +1,14 @@
 # Architecture
 
-**Release gate:** genuine live VAST, Cosmos, and W&B execution with real corpus evidence must be verified before this is described as submission-ready. The synthetic public build is an internal workflow/QA milestone.
+**Release gate:** genuine live VAST, Cosmos, and W&B execution with real corpus evidence must be verified before this is described as submission-ready. The synthetic local build is an internal workflow/QA milestone. Public hosting and GitHub Actions are not enabled.
 
 ## Two execution paths, one visible product
 
-### Public browser demo
+### Browser-local fixture mode
 
 `public/index.html → public/app.js → public/browser-demo.js → browser localStorage`
 
-All evidence is bundled synthetic media. The adapter only accepts demo actions and rejects live-provider actions. State is isolated to the visitor's browser. It never has server keys, provider access, or shared operational state. Pages publishes only `public/`.
+All evidence is bundled synthetic media. The adapter only accepts demo actions and rejects live-provider actions. State is isolated to the visitor's browser. It never has server keys, provider access, or shared operational state. No public deployment is active. Only `public/` would be eligible for any separately authorized static deployment.
 
 ### Real integration server
 
@@ -50,7 +50,7 @@ Only an already discovered existing TRAIN parent video can be reingested. The re
 - Published version/evaluation links are immutable
 - Repeated replay is deduplicated by version and evidence clip
 - State is stored atomically with restricted file permissions
-- Public hosting uses the static browser demo, not a credentialed shared backend
+- Any future authorized public hosting must use the isolated static fixture adapter, not a credentialed shared backend
 - The backend is not multi-tenant; a real deployment requires authentication, role separation, isolation, and rate limits
 
 ## Validation
@@ -66,7 +66,7 @@ Only an already discovered existing TRAIN parent video can be reingested. The re
 - Durable persistence, HTTP boundaries, CORS, hidden-file protection, video byte ranges
 - Browser-local demo parity and refusal of live actions
 
-The browser-recording workflow separately runs the actual UI in Chromium. Unit tests, mocked provider tests, browser tests, and real provider execution are distinct verification categories.
+The local browser-recording scripts are prepared to run the actual UI in Chromium in an authorized environment; their execution is still unverified. GitHub Actions is disabled. Unit tests, mocked provider tests, browser tests, and real provider execution are distinct verification categories.
 
 ## Known limitations
 

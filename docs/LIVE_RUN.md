@@ -1,6 +1,6 @@
 # Verified live run: release gate
 
-The public fixture build is not submission-ready. Complete this checklist with real evidence before describing ShowOnce as a working sponsor-integrated submission.
+The local fixture build is not submission-ready. Public hosting and GitHub Actions are not enabled. Complete this checklist with real evidence before describing ShowOnce as a working sponsor-integrated submission.
 
 ## 1. Use the authorized team environment
 
@@ -64,7 +64,7 @@ If the chosen event cannot pass honestly, preserve the failure evidence. Do not 
 - State the number of examples and the limits of the evaluation
 - No fictional real-world accuracy, impact metric, deployment, or operational alert
 
-The synthetic GitHub Actions recording is a separate QA artifact. It must not replace this live demo.
+Any synthetic local recording is a separate QA artifact. It must not replace this live demo.
 
 ## Release sign-off
 
@@ -96,3 +96,7 @@ ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 artifacts/l
 ```
 
 Inspect the completed MP4, ensure it stays under 180 seconds, and review the evidence JSON for private corpus context before sharing. The consistency gate does not cryptographically attest that an external provider ran; the operator must also verify the actual authorized environment and provider execution.
+
+## Existing authenticated previews
+
+The UI supports a path-prefixed mount such as an existing workshop `/proxy/3000/` route, including real `/api/media/` playback. Keep the backend bound to loopback. If an already authenticated HTTPS preview forwards its origin and the API rejects it, set `SHOWONCE_ALLOWED_ORIGINS` only to that exact verified origin, without a path or wildcard. Do not guess an origin, enable a new public port, or relax authentication. A VM desktop browser at `http://127.0.0.1:3000` avoids this proxy configuration entirely.

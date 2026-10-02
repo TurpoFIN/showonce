@@ -24,23 +24,24 @@ ShowOnce makes that workflow tangible: positive and hard-negative video teaching
 - Demo agreement is never represented as live model accuracy
 
 ## Sponsor usage
-The repository contains documented server-side integration paths for VAST Data, NVIDIA Cosmos, and Weights & Biases Inference. The public browser demo uses authored fixtures and performs no sponsor calls. Replace this paragraph with a precise statement of completed live calls only after verifying the corresponding runtime evidence.
+The repository contains documented server-side integration paths for VAST Data, NVIDIA Cosmos, and Weights & Biases Inference. The local browser-only demo uses authored fixtures and performs no sponsor calls. Replace this paragraph with a precise statement of completed live calls only after verifying the corresponding runtime evidence.
 
 ## Implementation
-Original standalone JavaScript application, zero runtime dependencies, Node HTTP API, atomic durable state, server-side clients, browser-local public demo, synthetic fixture video generator, automated tests, and a browser-recording workflow.
+Original standalone JavaScript application, zero runtime dependencies, Node HTTP API, atomic durable state, server-side clients, browser-local fixture mode, synthetic fixture video generator, automated tests, and local browser-recording scripts.
 
 ## Impact hypothesis
 Reduce the gap between an operator's practical event definition and an auditable camera rule. Potential domains include roadway operations and narrowly observable industrial events. This hypothesis requires user and field validation; no deployment or quantified impact is claimed.
 
 ## Links to verify before submission
 - Repository: https://github.com/TurpoFIN/showonce
-- Browser demo: https://turpofin.github.io/showonce/
+- Hosted demo: not deployed; use the actual authorized workshop/local application and its verified live recording
 - Demo video: add the verified completed recording link/file
 - Genuine sponsor-run evidence: add only if live execution completed
 
 ## Final readiness checklist
 - [ ] Public repository contains the tested final commit
-- [ ] Public demo loads and completes the workflow
+- [ ] No GitHub Actions workflows or paid CI have been enabled
+- [ ] Actual workshop/local application completes the genuine provider workflow
 - [ ] Actual final video exists, plays correctly, and is at most three minutes
 - [ ] Required sponsor usage is genuinely executed and evidenced, or the unmet requirement is explicitly acknowledged
 - [ ] No keys, personal data, proprietary code, or unsupported performance claims

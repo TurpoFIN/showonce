@@ -1,6 +1,6 @@
 # Fixture walkthrough and final live demo requirements
 
-**NOT A FINAL CONTEST DEMO:** the current synthetic fixture recording is workflow QA only. The final submission video must use real VAST footage and verified successful Cosmos and W&B execution. Do not submit the fixture recording as proof of sponsor usage.
+**NOT A FINAL CONTEST DEMO:** the prepared synthetic fixture recorder is for workflow QA only. The final submission video must use real VAST footage and verified successful Cosmos and W&B execution. Do not submit the fixture recording as proof of sponsor usage.
 
 Target: 2:15–2:45. The recorded footage should show the real UI, not a pre-rendered product mockup. Keep the synthetic-fixture badge visible throughout.
 
@@ -48,11 +48,11 @@ If real provider runs have been completed, show their genuine audit evidence and
 
 “Teach once. Challenge the boundary. Ship a rule you can inspect, and keep the proof.”
 
-Show the repository and public demo. No operational alerts were dispatched.
+Show the repository and actual workshop/local application. Public hosting is not deployed. No operational alerts were dispatched.
 
 ## Recording workflow
 
-GitHub Actions `demo.yml` runs the app, drives Chromium using `scripts/record-demo.mjs`, records the actual workflow, produces captions, and uploads MP4/screenshots/evidence JSON. Download the artifact from the successful run and inspect the resulting video before submission. A workflow file alone is not proof that a video has been generated.
+`scripts/record-demo.mjs` can drive Chromium locally against a fresh fixture server, record the workflow, and save screenshots/evidence JSON. Run it only in the authorized workshop/local environment. No GitHub Actions workflows are included or enabled. No completed recording is claimed yet. Inspect the resulting video after successful execution; the existence of a script is not evidence that it ran. Use `scripts/record-live.mjs` and docs/LIVE_RUN.md for the required genuine live evidence.
 
 ## Rehearsal checklist
 
