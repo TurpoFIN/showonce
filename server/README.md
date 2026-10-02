@@ -13,6 +13,8 @@ node --env-file=.env server/index.mjs
 
 The default bind address is `127.0.0.1:3000`. Set `PORT` and, only when needed, `HOST`. Use `HOST=0.0.0.0` only behind a confirmed authenticated workshop ingress/access gate, never generic public ingress. The app has no user-account/session layer: keep a credentialed instance on loopback or behind an authenticated reverse proxy. Do not expose a live credentialed instance as an unauthenticated public service. `SHOWONCE_ALLOWED_ORIGINS` accepts a comma-separated list of explicit frontend origins; localhost development origins and same-origin calls are allowed.
 
+An existing authenticated workshop preview may mount the UI under a path prefix; real media URLs follow that same mount. Keep loopback binding. If its HTTPS proxy forwards an origin that is rejected, set `SHOWONCE_ALLOWED_ORIGINS` only to the exact verified authenticated preview origin (scheme and host, no path or wildcard). This is not permission to expose the service publicly or create a new access grant. Using the VM desktop browser at `http://127.0.0.1:3000` requires no proxy-origin change.
+
 Local experiment state is atomically written to `server/.data/state.json`, with owner-only permissions and git exclusion. `SHOWONCE_DATA_FILE` may override it. Corrupt state causes a visible startup failure rather than silently discarding the experiment. Reset changes only this local experiment; it never removes VAST footage or cancels provider jobs.
 
 ## Provenance and evaluation boundaries
