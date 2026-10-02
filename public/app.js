@@ -1,6 +1,7 @@
 import { createBrowserDemo } from './browser-demo.js';
+import { resolveAssetUrl } from './asset-url.js';
 const BASE_URL = new URL('.', import.meta.url);
-const assetUrl = value => typeof value==='string'&&value.startsWith('/clips/') ? new URL(value.slice(1),BASE_URL).href : value;
+const assetUrl = value => resolveAssetUrl(value, BASE_URL);
 let localTransport=null;
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
